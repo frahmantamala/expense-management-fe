@@ -65,7 +65,6 @@ class HttpClient {
 
   private async request<T>(config: RequestConfig): Promise<T> {
     const { method, url, data, params, headers = {} } = config
-    console.log('🌐 NEW ApiClient request:', url, this.config.baseURL)
     const fullUrl = new URL(`${this.config.baseURL}${url}`)
     
     // Add query parameters

@@ -1,7 +1,3 @@
-<!--
-  ExpenseStatusBadge Component
-  Displays expense status with appropriate styling
--->
 <template>
   <span 
     :class="statusClasses"
@@ -30,35 +26,35 @@ const statusConfig = computed(() => {
       return {
         classes: 'bg-yellow-100 text-yellow-800',
         iconClasses: 'text-yellow-600',
-        icon: '🕐',
+        icon: '',
         label: 'Pending Approval'
       }
     case ExpenseStatus.AUTO_APPROVED:
       return {
         classes: 'bg-blue-100 text-blue-800',
         iconClasses: 'text-blue-600',
-        icon: '✅',
+        icon: '',
         label: 'Auto Approved'
       }
     case ExpenseStatus.APPROVED:
       return {
         classes: 'bg-green-100 text-green-800',
         iconClasses: 'text-green-600',
-        icon: '✅',
+        icon: '',
         label: 'Approved'
       }
     case ExpenseStatus.REJECTED:
       return {
         classes: 'bg-red-100 text-red-800',
         iconClasses: 'text-red-600',
-        icon: '❌',
+        icon: '',
         label: 'Rejected'
       }
     default:
       return {
         classes: 'bg-gray-100 text-gray-800',
         iconClasses: 'text-gray-600',
-        icon: '❓',
+        icon: '',
         label: 'Unknown'
       }
   }

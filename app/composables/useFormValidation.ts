@@ -4,7 +4,7 @@
  */
 
 import { ref, computed, watch } from 'vue'
-import { BUSINESS_RULES } from '../types/domain'
+import { BUSINESS_RULES, type UploadedFileState } from '../types/domain'
 
 interface ValidationRule<T = unknown> {
   validate: (value: T) => boolean
@@ -40,10 +40,11 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
 
   // Add validation rules for a field
   const addRule = (field: keyof T, rule: ValidationRule) => {
-    if (!validationRules.value[field as string]) {
-      validationRules.value[field as string] = []
+    const fieldKey = field as string
+    if (!validationRules.value[fieldKey]) {
+      validationRules.value[fieldKey] = []
     }
-    validationRules.value[field as string].push(rule)
+    validationRules.value[fieldKey]!.push(rule)
     initializeFields()
   }
 
@@ -53,14 +54,18 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     const value = formData.value[field]
     const rules = validationRules.value[fieldKey] || []
 
+    if (!fieldStates.value[fieldKey]) {
+      return true
+    }
+
     for (const rule of rules) {
       if (!rule.validate(value)) {
-        fieldStates.value[fieldKey].error = rule.message
+        fieldStates.value[fieldKey]!.error = rule.message
         return false
       }
     }
 
-    fieldStates.value[fieldKey].error = null
+    fieldStates.value[fieldKey]!.error = null
     return true
   }
 
@@ -87,8 +92,11 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
   const resetForm = () => {
     formData.value = { ...initialState }
     Object.keys(fieldStates.value).forEach(key => {
-      fieldStates.value[key].error = null
-      fieldStates.value[key].touched = false
+      const fieldState = fieldStates.value[key]
+      if (fieldState) {
+        fieldState.error = null
+        fieldState.touched = false
+      }
     })
   }
 
@@ -144,35 +152,29 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
 // Expense-specific validation composable
 export const useExpenseFormValidation = () => {
   const initialState = {
-    title: '',
     description: '',
     amount: null as number | null,
-    currency: 'IDR',
-    categoryId: '',
-    receiptFile: null as File | null
+    category: '',
+    expenseDate: null as Date | null,
+    receiptFile: null as UploadedFileState | null
   }
 
   const validation = useFormValidation(initialState)
 
   // Add expense-specific validation rules
-  validation.addRule('title', {
-    validate: (value: unknown) => typeof value === 'string' && value.trim().length > 0,
-    message: 'Title is required'
-  })
-
-  validation.addRule('title', {
-    validate: (value: unknown) => typeof value === 'string' && value.length <= 100,
-    message: 'Title must be less than 100 characters'
-  })
-
   validation.addRule('description', {
     validate: (value: unknown) => typeof value === 'string' && value.trim().length > 0,
     message: 'Description is required'
   })
 
   validation.addRule('description', {
-    validate: (value: unknown) => typeof value === 'string' && value.length <= 500,
-    message: 'Description must be less than 500 characters'
+    validate: (value: unknown) => typeof value === 'string' && value.trim().length >= BUSINESS_RULES.MIN_DESCRIPTION_LENGTH,
+    message: `Description must be at least ${BUSINESS_RULES.MIN_DESCRIPTION_LENGTH} characters`
+  })
+
+  validation.addRule('description', {
+    validate: (value: unknown) => typeof value === 'string' && value.length <= BUSINESS_RULES.MAX_DESCRIPTION_LENGTH,
+    message: `Description must be less than ${BUSINESS_RULES.MAX_DESCRIPTION_LENGTH} characters`
   })
 
   validation.addRule('amount', {
@@ -184,30 +186,47 @@ export const useExpenseFormValidation = () => {
     validate: (value: unknown) => {
       return value === null || (typeof value === 'number' && value <= BUSINESS_RULES.MAX_EXPENSE_AMOUNT)
     },
-    message: `Amount must be less than ${BUSINESS_RULES.MAX_EXPENSE_AMOUNT.toLocaleString()}`
+    message: `Amount must be less than ${BUSINESS_RULES.MAX_EXPENSE_AMOUNT.toLocaleString('id-ID')}`
   })
 
-  validation.addRule('categoryId', {
+  validation.addRule('category', {
     validate: (value: unknown) => typeof value === 'string' && value.trim().length > 0,
     message: 'Category is required'
   })
 
-  validation.addRule('receiptFile', {
+  validation.addRule('expenseDate', {
+    validate: (value: unknown) => value !== null && value instanceof Date,
+    message: 'Expense date is required'
+  })
+
+  validation.addRule('expenseDate', {
     validate: (value: unknown) => {
-      if (!value) return true // Optional field
-      if (!(value instanceof File)) return false
-      return value.size <= BUSINESS_RULES.RECEIPT_MAX_SIZE
+      if (!value || !(value instanceof Date)) return false
+      const today = new Date()
+      today.setHours(23, 59, 59, 999)
+      return value <= today
     },
-    message: 'Receipt file must be less than 5MB'
+    message: 'Expense date cannot be in the future'
+  })
+
+  validation.addRule('expenseDate', {
+    validate: (value: unknown) => {
+      if (!value || !(value instanceof Date)) return false
+      const oneYearAgo = new Date()
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      return value >= oneYearAgo
+    },
+    message: 'Expense date cannot be more than 1 year ago'
   })
 
   validation.addRule('receiptFile', {
     validate: (value: unknown) => {
       if (!value) return true // Optional field
-      if (!(value instanceof File)) return false
-      return BUSINESS_RULES.SUPPORTED_RECEIPT_FORMATS.includes(value.type as typeof BUSINESS_RULES.SUPPORTED_RECEIPT_FORMATS[number])
+      if (typeof value !== 'object' || value === null) return false
+      const uploadedFile = value as UploadedFileState
+      return !uploadedFile.error && !!uploadedFile.url && !!uploadedFile.filename
     },
-    message: 'Receipt must be a JPEG, PNG, or PDF file'
+    message: 'Receipt file upload failed or is incomplete'
   })
 
   return validation

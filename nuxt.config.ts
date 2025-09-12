@@ -7,6 +7,16 @@ export default defineNuxtConfig({
   css: [
     '@/assets/css/output.css'
   ],
+  components: [
+    {
+      path: '~/components',
+      global: true
+    },
+    {
+      path: '~/app/components',
+      global: true
+    }
+  ],
   alias: {
     '~': path.resolve(__dirname, './'),
     '@': path.resolve(__dirname, './'),

@@ -4,26 +4,6 @@
 -->
 <template>
   <form class="space-y-6" @submit.prevent="handleSubmit">
-    <!-- Title -->
-    <div>
-      <label for="title" class="block text-sm font-medium text-gray-700 mb-1">
-        Expense Title <span class="text-red-500">*</span>
-      </label>
-      <input
-        id="title"
-        v-model="formData.title"
-        type="text"
-        placeholder="Enter expense title"
-        :disabled="isSubmitting"
-        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-        :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('title') }"
-        @blur="touchField('title')"
-      >
-      <p v-if="getFieldError('title')" class="mt-1 text-sm text-red-600">
-        {{ getFieldError('title') }}
-      </p>
-    </div>
-
     <!-- Description -->
     <div>
       <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
@@ -32,7 +12,7 @@
       <textarea
         id="description"
         v-model="formData.description"
-        placeholder="Describe your expense"
+        placeholder="Describe your expense (e.g., Makan siang dengan klien)"
         rows="3"
         :disabled="isSubmitting"
         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
@@ -44,62 +24,31 @@
       </p>
     </div>
 
-    <!-- Amount and Currency -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="md:col-span-2">
-        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
-          Amount <span class="text-red-500">*</span>
-        </label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <span class="text-gray-500 sm:text-sm">{{ formData.currency }}</span>
-          </div>
-          <input
-            id="amount"
-            v-model.number="formData.amount"
-            type="number"
-            placeholder="0"
-            :min="1"
-            :max="BUSINESS_RULES.MAX_EXPENSE_AMOUNT"
-            :disabled="isSubmitting"
-            class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-            :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('amount') }"
-            @blur="touchField('amount')"
-          >
+    <!-- Amount (IDR only) -->
+    <div>
+      <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
+        Amount<span class="text-red-500">*</span>
+      </label>
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <span class="text-gray-500 sm:text-sm">Rp</span>
         </div>
-        <p v-if="getFieldError('amount')" class="mt-1 text-sm text-red-600">
-          {{ getFieldError('amount') }}
-        </p>
-      </div>
-      <div>
-        <label for="currency" class="block text-sm font-medium text-gray-700 mb-1">
-          Currency
-        </label>
-        <select
-          id="currency"
-          v-model="formData.currency"
+        <input
+          id="amount"
+          v-model.number="formData.amount"
+          type="number"
+          placeholder="50000"
+          :min="1"
+          :max="BUSINESS_RULES.MAX_EXPENSE_AMOUNT"
           :disabled="isSubmitting"
-          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+          class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+          :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('amount') }"
+          @blur="touchField('amount')"
         >
-          <option v-for="option in currencyOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
       </div>
-    </div>
-
-    <!-- Amount threshold warning -->
-    <div v-if="showApprovalWarning" class="p-3 bg-orange-50 border border-orange-200 rounded-lg">
-      <div class="flex items-start">
-        <span class="w-5 h-5 text-orange-400 mt-0.5 mr-2">⚠️</span>
-        <div>
-          <p class="text-sm font-medium text-orange-800">Requires Manager Approval</p>
-          <p class="text-xs text-orange-600 mt-1">
-            Expenses above {{ formatCurrency(BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD, formData.currency) }} 
-            require manager approval before payment processing.
-          </p>
-        </div>
-      </div>
+      <p v-if="getFieldError('amount')" class="mt-1 text-sm text-red-600">
+        {{ getFieldError('amount') }}
+      </p>
     </div>
 
     <!-- Category -->
@@ -107,21 +56,37 @@
       <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
         Category <span class="text-red-500">*</span>
       </label>
-      <select
+      <input
         id="category"
-        v-model="formData.categoryId"
-        :disabled="isSubmitting || categoriesLoading"
+        v-model="formData.category"
+        type="text"
+        placeholder="e.g., makan, transport, meeting"
+        :disabled="isSubmitting"
         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
-        :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('categoryId') }"
-        @blur="touchField('categoryId')"
+        :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('category') }"
+        @blur="touchField('category')"
       >
-        <option value="">Select a category</option>
-        <option v-for="option in categoryOptions" :key="option.value" :value="option.value">
-          {{ option.label }}
-        </option>
-      </select>
-      <p v-if="getFieldError('categoryId')" class="mt-1 text-sm text-red-600">
-        {{ getFieldError('categoryId') }}
+      <p v-if="getFieldError('category')" class="mt-1 text-sm text-red-600">
+        {{ getFieldError('category') }}
+      </p>
+    </div>
+
+    <!-- Expense Date -->
+    <div>
+      <label for="expenseDate" class="block text-sm font-medium text-gray-700 mb-1">
+        Expense Date <span class="text-red-500">*</span>
+      </label>
+      <input
+        id="expenseDate"
+        v-model="expenseDateInput"
+        type="date"
+        :disabled="isSubmitting"
+        class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
+        :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('expenseDate') }"
+        @blur="touchField('expenseDate')"
+      >
+      <p v-if="getFieldError('expenseDate')" class="mt-1 text-sm text-red-600">
+        {{ getFieldError('expenseDate') }}
       </p>
     </div>
 
@@ -144,17 +109,58 @@
           @change="handleFileChange"
         >
         
+        <!-- Upload Progress -->
+        <div v-if="isUploading" class="flex items-center p-3 bg-blue-50 rounded-lg">
+          <svg class="animate-spin w-5 h-5 text-blue-500 mr-3" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+          <span class="text-sm text-blue-700">Uploading file...</span>
+        </div>
+
+        <!-- Upload Error -->
+        <div v-else-if="uploadError" class="flex items-center p-3 bg-red-50 rounded-lg">
+          <span class="w-5 h-5 text-red-500 mr-3">⚠️</span>
+          <div class="flex-1">
+            <p class="text-sm font-medium text-red-700">Upload failed</p>
+            <p class="text-xs text-red-600">{{ uploadError }}</p>
+          </div>
+        </div>
+        
         <!-- File preview -->
-        <div v-if="formData.receiptFile" class="flex items-center p-3 bg-gray-50 rounded-lg">
-          <span class="w-8 h-8 text-gray-400 mr-3">
-            {{ getFileIcon(formData.receiptFile.type) }}
+        <div v-else-if="formData.receiptFile && formData.receiptFile.url" class="flex items-center p-3 bg-green-50 rounded-lg">
+          <span class="w-8 h-8 text-green-600 mr-3">
+            {{ getFileIcon(formData.receiptFile.file.type) }}
           </span>
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium text-gray-900 truncate">
-              {{ formData.receiptFile.name }}
+              {{ formData.receiptFile.file.name }}
             </p>
             <p class="text-xs text-gray-500">
-              {{ formatFileSize(formData.receiptFile.size) }}
+              {{ formatFileSize(formData.receiptFile.file.size) }} • Uploaded successfully
+            </p>
+          </div>
+          <button
+            type="button"
+            :disabled="isSubmitting"
+            class="ml-3 inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+            @click="removeFile"
+          >
+            <span class="w-4 h-4">✕</span>
+          </button>
+        </div>
+
+        <!-- Failed upload preview -->
+        <div v-else-if="formData.receiptFile && formData.receiptFile.error" class="flex items-center p-3 bg-red-50 rounded-lg">
+          <span class="w-8 h-8 text-red-500 mr-3">
+            ⚠️
+          </span>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-red-900 truncate">
+              {{ formData.receiptFile.file.name }}
+            </p>
+            <p class="text-xs text-red-600">
+              {{ formData.receiptFile.error }}
             </p>
           </div>
           <button
@@ -214,27 +220,26 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { CreateExpenseDto } from '../../types/domain'
+import type { CreateExpenseFormDto, UploadedFileState } from '../../types/domain'
 import { BUSINESS_RULES } from '../../types/domain'
 import { useExpenseFormValidation } from '../../composables/useFormValidation'
+import { fileUploadService } from '../../services/fileUpload'
 
 interface Props {
   mode?: 'create' | 'edit'
-  initialData?: Partial<CreateExpenseDto>
-  categories?: Array<{ id: string; name: string; description?: string }>
+  initialData?: Partial<CreateExpenseFormDto>
   categoriesLoading?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'create',
   initialData: undefined,
-  categories: () => [],
   categoriesLoading: false
 })
 
 // Emits
-defineEmits<{
-  submit: [data: CreateExpenseDto]
+const emit = defineEmits<{
+  submit: [data: CreateExpenseFormDto]
   cancel: []
 }>()
 
@@ -255,25 +260,20 @@ const fileInput = ref<HTMLInputElement>()
 // Store initial state for reset functionality
 const initialFormState = ref<typeof formData.value>()
 
-// Currency options
-const currencyOptions = computed(() => 
-  BUSINESS_RULES.SUPPORTED_CURRENCIES.map(currency => ({
-    label: currency,
-    value: currency
-  }))
-)
+// File upload state
+const isUploading = ref(false)
+const uploadError = ref<string | null>(null)
 
-// Category options
-const categoryOptions = computed(() => 
-  props.categories.map(category => ({
-    label: category.name,
-    value: category.id
-  }))
-)
-
-// Show approval warning for high amounts
-const showApprovalWarning = computed(() => {
-  return formData.value.amount && formData.value.amount >= BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
+// Date handling for expenseDate
+const expenseDateInput = computed({
+  get: () => {
+    if (!formData.value.expenseDate) return ''
+    const date = new Date(formData.value.expenseDate)
+    return date.toISOString().split('T')[0]
+  },
+  set: (value: string) => {
+    formData.value.expenseDate = value ? new Date(value) : null
+  }
 })
 
 // Check if form has changes (for edit mode)
@@ -284,15 +284,61 @@ const hasChanges = computed(() => {
 })
 
 // File handling
-const handleFileChange = (event: Event) => {
+const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0] || null
-  formData.value.receiptFile = file
-  touchField('receiptFile')
+  const file = target.files?.[0]
+  
+  if (!file) {
+    formData.value.receiptFile = null
+    return
+  }
+
+  // Validate file first
+  const validation = fileUploadService.validateFile(file)
+  if (!validation.isValid) {
+    uploadError.value = validation.error || 'Invalid file'
+    touchField('receiptFile')
+    // Clear the input
+    if (fileInput.value) {
+      fileInput.value.value = ''
+    }
+    return
+  }
+
+  // Upload file immediately
+  isUploading.value = true
+  uploadError.value = null
+  
+  try {
+    const uploadResult = await fileUploadService.uploadFile(file)
+    
+    // Store the uploaded file information
+    formData.value.receiptFile = {
+      file,
+      url: uploadResult.url,
+      filename: uploadResult.filename,
+      uploading: false
+    }
+    
+    touchField('receiptFile')
+  } catch (error) {
+    uploadError.value = error instanceof Error ? error.message : 'Upload failed'
+    formData.value.receiptFile = {
+      file,
+      url: '',
+      filename: '',
+      uploading: false,
+      error: uploadError.value
+    }
+    touchField('receiptFile')
+  } finally {
+    isUploading.value = false
+  }
 }
 
 const removeFile = () => {
   formData.value.receiptFile = null
+  uploadError.value = null
   if (fileInput.value) {
     fileInput.value.value = ''
   }
@@ -315,15 +361,6 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-const formatCurrency = (amount: number, currency: string): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
-}
-
 // Form submission
 const handleSubmit = () => {
   // Touch all fields to show validation errors
@@ -333,19 +370,17 @@ const handleSubmit = () => {
     return
   }
 
-  // Create submission data
-  const submissionData: CreateExpenseDto = {
-    title: formData.value.title,
+  // Create submission data using CreateExpenseFormDto
+  const submissionData: CreateExpenseFormDto = {
     description: formData.value.description,
     amount: formData.value.amount!,
-    currency: formData.value.currency,
-    categoryId: formData.value.categoryId,
+    category: formData.value.category,
+    expenseDate: formData.value.expenseDate!,
     receiptFile: formData.value.receiptFile || undefined
   }
 
   // Emit submit event
-  // @ts-expect-error - emit function is available in script setup
-  $emit('submit', submissionData)
+  emit('submit', submissionData)
 }
 
 // Reset form to initial state
@@ -362,11 +397,10 @@ const resetToInitialState = () => {
 const initializeForm = () => {
   if (props.initialData) {
     Object.assign(formData.value, {
-      title: props.initialData.title || '',
       description: props.initialData.description || '',
       amount: props.initialData.amount || null,
-      currency: props.initialData.currency || 'IDR',
-      categoryId: props.initialData.categoryId || '',
+      category: props.initialData.category || '',
+      expenseDate: props.initialData.expenseDate || null,
       receiptFile: null // File inputs can't be pre-populated
     })
   }

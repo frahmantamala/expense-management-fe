@@ -6,12 +6,13 @@
 import { ref, reactive, computed, onMounted, toRefs, readonly } from 'vue'
 import type { 
   Expense, 
-  CreateExpenseDto, 
+  CreateExpenseFormDto, 
   ExpenseSearchParams,
   ApproveExpenseDto,
   RejectExpenseDto
 } from '../types/domain'
 import { ExpenseService, ApprovalService, PaymentService, CategoryService } from '../services/domain/expense'
+import { useApiClient } from './useApiClient'
 
 interface UseExpenseOptions {
   initialParams?: ExpenseSearchParams
@@ -23,10 +24,9 @@ interface ExpenseState {
   currentExpense: Expense | null
   categories: Array<{ id: string; name: string; description?: string }>
   pagination: {
-    total: number
-    page: number
     limit: number
-    totalPages: number
+    offset: number
+    total?: number
   }
   loading: boolean
   submitting: boolean
@@ -49,10 +49,9 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
     currentExpense: null,
     categories: [],
     pagination: {
-      total: 0,
-      page: 1,
       limit: 10,
-      totalPages: 0
+      offset: 0,
+      total: 0
     },
     loading: false,
     submitting: false,
@@ -61,7 +60,6 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
 
   // Search parameters
   const searchParams = ref<ExpenseSearchParams>({
-    page: 1,
     limit: 10,
     ...initialParams
   })
@@ -69,7 +67,10 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   // Computed properties
   const hasExpenses = computed(() => state.expenses.length > 0)
   const isEmpty = computed(() => !state.loading && !hasExpenses.value)
-  const canLoadMore = computed(() => state.pagination.page < state.pagination.totalPages)
+  const canLoadMore = computed(() => {
+    const { total, limit, offset } = state.pagination
+    return total ? (offset + limit) < total : false
+  })
 
   // Actions
   const loadExpenses = async (params?: Partial<ExpenseSearchParams>) => {
@@ -79,13 +80,13 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
 
       const mergedParams = { ...searchParams.value, ...params }
       const result = await expenseService.getExpenses(mergedParams)
-
-      state.expenses = result.items
+      console.info('Loaded expenses:', result)
+      
+      state.expenses = result.expenses
       state.pagination = {
-        total: result.total,
-        page: result.page,
         limit: result.limit,
-        totalPages: result.totalPages
+        offset: result.offset,
+        total: result.expenses.length // Since API doesn't return total, we use current count
       }
 
       // Update search params
@@ -103,20 +104,20 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
 
     try {
       state.loading = true
+      const nextOffset = state.pagination.offset + state.pagination.limit
       const nextPageParams = {
         ...searchParams.value,
-        page: state.pagination.page + 1
+        offset: nextOffset
       }
 
       const result = await expenseService.getExpenses(nextPageParams)
       
       // Append new expenses to existing list
-      state.expenses.push(...result.items)
+      state.expenses.push(...result.expenses)
       state.pagination = {
-        total: result.total,
-        page: result.page,
         limit: result.limit,
-        totalPages: result.totalPages
+        offset: result.offset,
+        total: state.pagination.total ? state.pagination.total + result.expenses.length : result.expenses.length
       }
 
       searchParams.value = nextPageParams
@@ -144,7 +145,7 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
     }
   }
 
-  const createExpense = async (expenseData: CreateExpenseDto) => {
+  const createExpense = async (expenseData: CreateExpenseFormDto) => {
     try {
       state.submitting = true
       state.error = null
@@ -164,7 +165,7 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
     }
   }
 
-  const updateExpense = async (id: string, updates: Partial<CreateExpenseDto>) => {
+  const updateExpense = async (id: string, updates: Partial<CreateExpenseFormDto>) => {
     try {
       state.submitting = true
       state.error = null
@@ -292,6 +293,7 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   const loadCategories = async () => {
     try {
       const categories = await categoryService.getCategories()
+      console.info('Loaded categories:', await categoryService.getCategories())
       state.categories = categories
       return categories
     } catch (error) {
@@ -301,12 +303,12 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   }
 
   const searchExpenses = async (filters: ExpenseSearchParams) => {
-    const params = { ...filters, page: 1 } // Reset to first page for new search
+    const params = { ...filters, offset: 0 } // Reset to first page for new search
     await loadExpenses(params)
   }
 
   const resetSearch = async () => {
-    searchParams.value = { page: 1, limit: 10 }
+    searchParams.value = { limit: 10, offset: 0 }
     await loadExpenses()
   }
 

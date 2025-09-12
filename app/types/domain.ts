@@ -3,6 +3,20 @@
  * Following Domain-Driven Design principles
  */
 
+// Constants for business rules
+export const BUSINESS_RULES = {
+  AUTO_APPROVAL_THRESHOLD: 1000000, // 1M IDR
+  MAX_EXPENSE_AMOUNT: 100000000, // 100M IDR
+  MIN_DESCRIPTION_LENGTH: 5,
+  MAX_DESCRIPTION_LENGTH: 500,
+  SUPPORTED_CURRENCIES: ['IDR', 'USD'] as const,
+  RECEIPT_MAX_SIZE: 5 * 1024 * 1024, // 5MB
+  SUPPORTED_RECEIPT_FORMATS: ['image/jpeg', 'image/png', 'application/pdf'] as const
+} as const
+
+export type SupportedCurrency = typeof BUSINESS_RULES.SUPPORTED_CURRENCIES[number]
+export type SupportedReceiptFormat = typeof BUSINESS_RULES.SUPPORTED_RECEIPT_FORMATS[number]
+
 // Enums for type safety and better domain modeling
 export enum ExpenseStatus {
   PENDING_APPROVAL = 'pending_approval',
@@ -27,7 +41,7 @@ export enum UserRole {
 // Value Objects
 export interface Money {
   amount: number
-  currency: string
+  currency: SupportedCurrency
 }
 
 export interface ExpenseCategory {
@@ -45,64 +59,78 @@ export interface User {
   department?: string
 }
 
-export interface Expense {
-  id: string
-  title: string
-  description: string
-  amount: Money
-  category: ExpenseCategory
-  receiptUrl?: string
-  submittedBy: User
-  submittedAt: Date
-  expenseStatus: ExpenseStatus
-  paymentStatus: PaymentStatus | null
-  approvedBy?: User
-  approvedAt?: Date
-  rejectedReason?: string
-  paymentFailureReason?: string
-  createdAt: Date
-  updatedAt: Date
-}
-
 // DTOs for API communication
 export interface CreateExpenseDto {
-  title: string
+  amount_idr: number
+  description: string
+  category: string
+  expense_date: string // ISO string format
+  receipt_url?: string
+  receipt_filename?: string
+}
+
+// Frontend form DTO (used by forms)
+// Frontend form DTO for expense creation
+export interface CreateExpenseFormDto {
   description: string
   amount: number
-  currency: string
-  categoryId: string
-  receiptFile?: File
+  category: string
+  expenseDate: Date
+  receiptFile?: UploadedFileState // Changed from File to UploadedFileState
 }
 
 export interface UpdateExpenseDto {
-  title?: string
+  amount_idr?: number
   description?: string
-  amount?: number
-  categoryId?: string
+  category?: string
+  expense_date?: string
+  receipt_url?: string
+  receipt_filename?: string
 }
 
 export interface ApproveExpenseDto {
-  approvalComment?: string
+  notes?: string
 }
 
 export interface RejectExpenseDto {
-  rejectionReason: string
+  reason: string
 }
 
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean
-  data: T
-  message?: string
-  errors?: string[]
-}
-
-export interface PaginatedResponse<T> {
-  items: T[]
-  total: number
-  page: number
+// API Response types - Based on actual API structure
+export interface ExpensesApiResponse {
+  expenses: ApiExpense[]
   limit: number
-  totalPages: number
+  offset: number
+}
+
+// Raw API expense structure (as returned by backend)
+export interface ApiExpense {
+  id: number
+  user_id: number
+  amount_idr: number
+  description: string
+  category: string
+  expense_status: string
+  expense_date: string
+  submitted_at: string
+  processed_at?: string
+  created_at: string
+  updated_at: string
+}
+
+// Domain expense model (transformed from API response)
+export interface Expense {
+  id: string
+  userId: number
+  amount: Money
+  description: string
+  category: string
+  expenseStatus: ExpenseStatus
+  expenseDate: Date
+  submittedAt: Date
+  processedAt?: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
 // Filter and search types
@@ -119,6 +147,7 @@ export interface ExpenseFilters {
 
 export interface ExpenseSearchParams extends ExpenseFilters {
   page?: number
+  offset?: number
   limit?: number
   sortBy?: 'createdAt' | 'amount' | 'updatedAt'
   sortOrder?: 'asc' | 'desc'
@@ -127,31 +156,34 @@ export interface ExpenseSearchParams extends ExpenseFilters {
 
 // Form state types
 export interface ExpenseFormState {
-  title: string
   description: string
   amount: number | null
-  currency: string
-  categoryId: string
+  category: string
+  expenseDate: Date | null
   receiptFile: File | null
 }
 
 export interface ExpenseFormErrors {
-  title?: string
   description?: string
   amount?: string
-  categoryId?: string
+  category?: string
+  expenseDate?: string
   receiptFile?: string
   general?: string
 }
 
-// Constants for business rules
-export const BUSINESS_RULES = {
-  AUTO_APPROVAL_THRESHOLD: 1000000, // 1M IDR
-  MAX_EXPENSE_AMOUNT: 100000000, // 100M IDR
-  SUPPORTED_CURRENCIES: ['IDR', 'USD'] as const,
-  RECEIPT_MAX_SIZE: 5 * 1024 * 1024, // 5MB
-  SUPPORTED_RECEIPT_FORMATS: ['image/jpeg', 'image/png', 'application/pdf'] as const
-} as const
+// File Upload Response from external API
+export interface FileUploadResponse {
+  originalname: string
+  filename: string
+  location: string
+}
 
-export type SupportedCurrency = typeof BUSINESS_RULES.SUPPORTED_CURRENCIES[number]
-export type SupportedReceiptFormat = typeof BUSINESS_RULES.SUPPORTED_RECEIPT_FORMATS[number]
+// Uploaded file state for forms
+export interface UploadedFileState {
+  file: File
+  url: string
+  filename: string
+  uploading?: boolean
+  error?: string
+}

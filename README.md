@@ -1,6 +1,6 @@
 # Expense Management Frontend
 
-A modern, domain-driven expense management system built with Nuxt 3, TypeScript, and Nuxt UI following KISS, DRY, and separation of concerns principles.
+A modern, domain-driven expense management system built with Nuxt 3, TypeScript, and Nuxt and separation of concerns principles.
 
 ## 🏗️ Architecture Overview
 
@@ -37,7 +37,7 @@ expense-management-fe/
     └── app.vue                 # Main app layout
 ```
 
-## 🎯 Core Features
+## Core Features
 
 ### Business Logic Implementation
 
@@ -56,24 +56,6 @@ Based on your sequence diagram, the system handles:
    - Payment status tracking
    - Payment failure handling
    - Payment retry functionality
-
-### Domain Models
-
-```typescript
-enum ExpenseStatus {
-  PENDING_APPROVAL = 'pending_approval',
-  AUTO_APPROVED = 'auto_approved', 
-  APPROVED = 'approved',
-  REJECTED = 'rejected'
-}
-
-enum PaymentStatus {
-  PENDING = 'pending',
-  PROCESSING = 'processing',
-  PAID = 'paid',
-  FAILED = 'failed'
-}
-```
 
 ## 🛠️ Technical Implementation
 
@@ -107,30 +89,6 @@ Create a `.env` file:
 
 ```bash
 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
-```
-
-### API Endpoints
-
-The frontend expects the following API endpoints:
-
-```typescript
-// Expenses
-GET    /expenses              # List expenses with filtering
-POST   /expenses              # Create expense
-GET    /expenses/:id          # Get expense details  
-PUT    /expenses/:id          # Update expense
-DELETE /expenses/:id          # Delete expense
-
-// Approval Workflow
-PUT    /expenses/:id/approve  # Approve expense
-PUT    /expenses/:id/reject   # Reject expense
-
-// Payment Operations
-POST   /expenses/:id/payment/retry  # Retry payment
-GET    /expenses/:id/payment/status # Get payment status
-
-// Categories
-GET    /categories            # List expense categories
 ```
 
 ## 🚀 Getting Started
@@ -191,22 +149,12 @@ pnpm test
 - Responsive design
 - Accessible UI components
 
-## 🏛️ Architecture Principles
+## 🏛️ Architecture
 
 ### Domain-Driven Design (DDD)
 - Clear domain models and business rules
 - Separation of business logic from UI
 - Domain services for complex operations
-
-### KISS (Keep It Simple, Stupid)
-- Simple, focused components
-- Clear naming conventions
-- Minimal complexity in each layer
-
-### DRY (Don't Repeat Yourself)
-- Reusable composables and utilities
-- Shared validation logic
-- Common UI components
 
 ### Separation of Concerns
 - API layer separate from business logic
@@ -229,39 +177,3 @@ pnpm test
 - Client-side form validation
 - Business rule enforcement
 - File upload validation
-
-## 🚀 Next Steps
-
-To extend this application:
-
-1. **Add Authentication**
-   - User login/logout
-   - Role-based access control
-   - JWT token management
-
-2. **Enhanced Features**
-   - Expense reporting and analytics
-   - Bulk operations
-   - Advanced filtering and search
-
-3. **Testing**
-   - Unit tests for composables
-   - Component testing
-   - E2E testing for workflows
-
-4. **Performance**
-   - Implement caching strategies
-   - Optimize bundle size
-   - Add Progressive Web App features
-
-## 🤝 Contributing
-
-This codebase follows:
-- Vue 3 Composition API
-- TypeScript strict mode
-- ESLint with Nuxt recommended rules
-- Conventional commit messages
-
-## 📄 License
-
-This project is built for demonstration purposes showcasing modern frontend architecture patterns.

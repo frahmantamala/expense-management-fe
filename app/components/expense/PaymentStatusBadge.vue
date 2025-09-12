@@ -1,7 +1,3 @@
-<!--
-  PaymentStatusBadge Component
-  Displays payment status with appropriate styling
--->
 <template>
   <span 
     :class="statusClasses"

@@ -26,13 +26,6 @@ export interface LoginResponse {
   refresh_token: string
 }
 
-export interface ApiResponse<T> {
-  success: boolean
-  data: T
-  message?: string
-  errors?: string[]
-}
-
 export class AuthService {
   constructor(private httpClient: HttpClient) {}
 

@@ -53,83 +53,10 @@
             :disabled="categoriesLoading"
             @change="applyFilters"
           >
-            <option value="">All Categories</option>
-            <option v-for="category in categoryOptions" :key="category.value" :value="category.value">
+            <option v-for="category in categoryOptions" :key="category.name" :value="category.name">
               {{ category.label }}
             </option>
           </select>
-        </div>
-      </div>
-
-      <!-- Advanced Filters Toggle -->
-      <div class="mt-4">
-        <button
-          type="button"
-          class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          @click="showAdvancedFilters = !showAdvancedFilters"
-        >
-          <span class="w-4 h-4 mr-2">
-            {{ showAdvancedFilters ? '▲' : '▼' }}
-          </span>
-          {{ showAdvancedFilters ? 'Hide' : 'Show' }} Advanced Filters
-        </button>
-      </div>
-
-      <!-- Advanced Filters -->
-      <div v-if="showAdvancedFilters" class="mt-4 pt-4 border-t border-gray-200">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Date Range -->
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input
-                v-model="dateFrom"
-                type="date"
-                placeholder="From"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                @change="applyFilters"
-              >
-              <input
-                v-model="dateTo"
-                type="date"
-                placeholder="To"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                @change="applyFilters"
-              >
-            </div>
-          </div>
-
-          <!-- Amount Range -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Amount Range</label>
-            <div class="grid grid-cols-2 gap-2">
-              <input
-                v-model.number="amountMin"
-                type="number"
-                placeholder="Min"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                @input="debouncedFilter"
-              >
-              <input
-                v-model.number="amountMax"
-                type="number"
-                placeholder="Max"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                @input="debouncedFilter"
-              >
-            </div>
-          </div>
-        </div>
-
-        <!-- Clear Filters -->
-        <div class="mt-4">
-          <button
-            type="button"
-            class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            @click="clearFilters"
-          >
-            Clear All Filters
-          </button>
         </div>
       </div>
     </div>
@@ -145,7 +72,6 @@
 
     <!-- Empty State -->
     <div v-else-if="isEmpty" class="text-center py-12">
-      <span class="w-16 h-16 text-gray-300 mx-auto mb-4 block text-6xl">📄</span>
       <h3 class="text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
       <p class="text-gray-600 mb-6">
         {{ hasActiveFilters ? 'Try adjusting your filters or' : 'Get started by' }} creating your first expense.
@@ -164,7 +90,7 @@
       <!-- Results Summary -->
       <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
         <span>
-          Showing {{ expenses.length }} of {{ pagination.total }} expenses
+          Showing {{ expenses.length }} of {{ pagination.total || expenses.length }} expenses
         </span>
         <div class="flex items-center space-x-4">
           <!-- Sort Options -->
@@ -199,10 +125,12 @@
           <!-- Expense card content would go here -->
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">{{ expense.description }}</h3>
-            <ExpenseStatusBadge :status="expense.status" />
+            <ExpenseStatusBadge :status="expense.expenseStatus" />
           </div>
-          <p class="text-2xl font-bold text-gray-900 mb-2">${{ expense.amount }}</p>
-          <p class="text-sm text-gray-600 mb-4">{{ expense.category?.name }}</p>
+          <p class="text-2xl font-bold text-gray-900 mb-2">
+            {{ formatMoney(expense.amount) }}
+          </p>
+          <p class="text-sm text-gray-600 mb-4">{{ expense.category }}</p>
           
           <!-- Action buttons -->
           <div class="flex space-x-2">
@@ -214,20 +142,20 @@
               View
             </button>
             <button
-              v-if="expense.canEdit"
+              v-if="canApproveExpense(expense)"
               type="button"
-              class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              @click="editExpense(expense.id)"
+              class="inline-flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 border border-green-200 rounded-md hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              @click="confirmApprove(expense.id)"
             >
-              Edit
+              Approve
             </button>
             <button
-              v-if="expense.canDelete"
+              v-if="canRejectExpense(expense)"
               type="button"
               class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-md hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              @click="confirmDelete(expense.id)"
+              @click="confirmReject(expense.id)"
             >
-              Delete
+              Reject
             </button>
           </div>
         </div>
@@ -263,16 +191,16 @@
 
     <!-- Action Modals -->
     <ExpenseActionModals
-      :show-delete="showDeleteModal"
       :show-approve="showApproveModal"
       :show-reject="showRejectModal"
-      :show-retry-payment="showRetryPaymentModal"
       :selected-expense="selectedExpense"
       :processing="submitting"
-      @confirm-delete="deleteExpense"
+      :user-permissions="{
+        canApprove: true, // TODO: Replace with actual user permissions
+        canReject: true   // TODO: Replace with actual user permissions
+      }"
       @confirm-approve="approveExpense"
       @confirm-reject="rejectExpense"
-      @confirm-retry-payment="retryPayment"
       @cancel="closeModals"
     />
   </div>
@@ -284,6 +212,7 @@ import { debounce } from 'lodash-es'
 import type { Expense, ExpenseSearchParams } from '../../types/domain'
 import { ExpenseStatus } from '../../types/domain'
 import { useExpenses } from '../../composables/useExpenses'
+import { useCurrency } from '../../composables/useCurrency'
 
 // Page metadata
 definePageMeta({
@@ -292,9 +221,8 @@ definePageMeta({
   middleware: 'auth'
 })
 
-// Mock user data - in real app, this would come from auth store
-const _userRole = ref<'employee' | 'manager' | 'admin'>('employee')
-const _currentUserId = ref('current-user-id')
+// Currency formatting
+const { formatMoney } = useCurrency()
 
 // Expense management
 const {
@@ -307,10 +235,8 @@ const {
   isEmpty,
   canLoadMore,
   loadMoreExpenses,
-  deleteExpense: deleteExpenseAction,
   approveExpense: approveExpenseAction,
   rejectExpense: rejectExpenseAction,
-  retryPayment: retryPaymentAction,
   refreshExpenses,
   searchExpenses
 } = useExpenses({ autoLoad: true })
@@ -323,20 +249,27 @@ const dateFrom = ref('')
 const dateTo = ref('')
 const amountMin = ref<number | null>(null)
 const amountMax = ref<number | null>(null)
-const showAdvancedFilters = ref(false)
 
 // Sorting
 const sortBy = ref('createdAt')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 
 // Modal state
-const showDeleteModal = ref(false)
 const showApproveModal = ref(false)
 const showRejectModal = ref(false)
-const showRetryPaymentModal = ref(false)
 const selectedExpense = ref<Expense | null>(null)
 
-// Computed properties
+// Computed properties for expense actions
+const canApproveExpense = (expense: Expense) => {
+  // Can approve if expense is pending approval
+  return expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL
+}
+
+const canRejectExpense = (expense: Expense) => {
+  // Can reject if expense is pending approval
+  return expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL
+}
+
 const hasActiveFilters = computed(() => {
   return !!(
     searchQuery.value ||
@@ -362,7 +295,7 @@ const statusOptions = computed(() => [
 
 const categoryOptions = computed(() => [
   { label: 'All Categories', value: null },
-  ...categories.value.map(cat => ({ label: cat.name, value: cat.id }))
+  ...categories.value.map(cat => ({ label: cat.name, value: cat.name }))
 ])
 
 const sortOptions = computed(() => [
@@ -374,7 +307,7 @@ const sortOptions = computed(() => [
 // Search and filter methods
 const buildSearchParams = (): ExpenseSearchParams => {
   const params: ExpenseSearchParams = {
-    page: 1,
+    offset: 0,
     limit: 20,
     sortBy: sortBy.value as 'createdAt' | 'amount' | 'updatedAt',
     sortOrder: sortOrder.value
@@ -425,67 +358,30 @@ const toggleSortOrder = () => {
   applyFilters()
 }
 
-const clearFilters = () => {
-  searchQuery.value = ''
-  selectedStatus.value = null
-  selectedCategory.value = null
-  dateFrom.value = ''
-  dateTo.value = ''
-  amountMin.value = null
-  amountMax.value = null
-  applyFilters()
-}
-
 // Debounced functions
 const debouncedSearch = debounce(applyFilters, 300)
-const debouncedFilter = debounce(applyFilters, 500)
 
 // Expense actions
 const viewExpense = (expenseId: string) => {
   navigateTo(`/expenses/${expenseId}`)
 }
 
-const editExpense = (expenseId: string) => {
-  navigateTo(`/expenses/${expenseId}/edit`)
-}
-
-const confirmDelete = (expenseId: string) => {
-  selectedExpense.value = expenses.value.find(e => e.id === expenseId) || null
-  showDeleteModal.value = true
-}
-
-const _confirmApprove = (expenseId: string) => {
+const confirmApprove = (expenseId: string) => {
   selectedExpense.value = expenses.value.find(e => e.id === expenseId) || null
   showApproveModal.value = true
 }
 
-const _confirmReject = (expenseId: string) => {
+const confirmReject = (expenseId: string) => {
   selectedExpense.value = expenses.value.find(e => e.id === expenseId) || null
   showRejectModal.value = true
 }
 
-const _confirmRetryPayment = (expenseId: string) => {
-  selectedExpense.value = expenses.value.find(e => e.id === expenseId) || null
-  showRetryPaymentModal.value = true
-}
-
-const deleteExpense = async () => {
-  if (!selectedExpense.value) return
-  
-  try {
-    await deleteExpenseAction(selectedExpense.value.id)
-    closeModals()
-  } catch (error) {
-    console.error('Error deleting expense:', error)
-  }
-}
-
-const approveExpense = async (approvalData: { comment?: string }) => {
+const approveExpense = async (approvalData: { notes?: string }) => {
   if (!selectedExpense.value) return
   
   try {
     await approveExpenseAction(selectedExpense.value.id, {
-      approvalComment: approvalData.comment
+      notes: approvalData.notes
     })
     closeModals()
   } catch (error) {
@@ -498,7 +394,7 @@ const rejectExpense = async (rejectionData: { reason: string }) => {
   
   try {
     await rejectExpenseAction(selectedExpense.value.id, {
-      rejectionReason: rejectionData.reason
+      reason: rejectionData.reason
     })
     closeModals()
   } catch (error) {
@@ -506,22 +402,9 @@ const rejectExpense = async (rejectionData: { reason: string }) => {
   }
 }
 
-const retryPayment = async () => {
-  if (!selectedExpense.value) return
-  
-  try {
-    await retryPaymentAction(selectedExpense.value.id)
-    closeModals()
-  } catch (error) {
-    console.error('Error retrying payment:', error)
-  }
-}
-
 const closeModals = () => {
-  showDeleteModal.value = false
   showApproveModal.value = false
   showRejectModal.value = false
-  showRetryPaymentModal.value = false
   selectedExpense.value = null
 }
 

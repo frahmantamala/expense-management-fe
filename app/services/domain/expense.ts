@@ -5,16 +5,47 @@
 
 import type { 
   Expense, 
-  CreateExpenseDto, 
+  ApiExpense,
+  ExpensesApiResponse,
+  CreateExpenseDto,
+  CreateExpenseFormDto,
   UpdateExpenseDto,
-  ApiResponse, 
-  PaginatedResponse,
   ExpenseSearchParams,
   ApproveExpenseDto,
-  RejectExpenseDto
+  RejectExpenseDto,
+  Money
 } from '../../types/domain'
 import { ExpenseStatus } from '../../types/domain'
 import type { HttpClient } from '../api/client'
+
+// Domain response format for expenses
+export interface ExpenseListResponse {
+  expenses: Expense[]
+  limit: number
+  offset: number
+}
+
+/**
+ * Transform API expense to domain expense
+ */
+function transformApiExpense(apiExpense: ApiExpense): Expense {
+  return {
+    id: apiExpense.id.toString(),
+    userId: apiExpense.user_id,
+    amount: {
+      amount: apiExpense.amount_idr,
+      currency: 'IDR'
+    } as Money,
+    description: apiExpense.description,
+    category: apiExpense.category,
+    expenseStatus: apiExpense.expense_status as ExpenseStatus,
+    expenseDate: new Date(apiExpense.expense_date),
+    submittedAt: new Date(apiExpense.submitted_at),
+    processedAt: apiExpense.processed_at ? new Date(apiExpense.processed_at) : undefined,
+    createdAt: new Date(apiExpense.created_at),
+    updatedAt: new Date(apiExpense.updated_at)
+  }
+}
 
 export class ExpenseService {
   constructor(private httpClient: HttpClient) {}
@@ -22,11 +53,11 @@ export class ExpenseService {
   /**
    * Get paginated list of expenses with filters
    */
-  async getExpenses(params: ExpenseSearchParams = {}): Promise<PaginatedResponse<Expense>> {
+  async getExpenses(params: ExpenseSearchParams = {}): Promise<ExpenseListResponse> {
     // Map frontend params to backend API params
     const apiParams: Record<string, string | number | boolean> = {}
     
-    // Map pagination params
+    // Map pagination params  
     if (params.page) apiParams.page = params.page
     if (params.limit) apiParams.per_page = params.limit
     
@@ -47,50 +78,110 @@ export class ExpenseService {
     if (params.sortBy) apiParams.sort_by = params.sortBy
     if (params.sortOrder) apiParams.sort_order = params.sortOrder
 
-    const response = await this.httpClient.get<ApiResponse<PaginatedResponse<Expense>>>(
+    // Get raw API response
+    const apiResponse = await this.httpClient.get<ExpensesApiResponse>(
       '/expenses',
       apiParams
     )
-    return response.data
+    
+    // Transform API expenses to domain expenses
+    const transformedExpenses = apiResponse.expenses.map(transformApiExpense)
+    
+    return {
+      expenses: transformedExpenses,
+      limit: apiResponse.limit,
+      offset: apiResponse.offset
+    }
   }
 
   /**
    * Get single expense by ID
    */
   async getExpenseById(id: string): Promise<Expense> {
-    const response = await this.httpClient.get<ApiResponse<Expense>>(`/expenses/${id}`)
-    return response.data
+    // Get raw API response and transform it
+    const apiExpense = await this.httpClient.get<ApiExpense>(`/expenses/${id}`)
+    return transformApiExpense(apiExpense)
   }
 
   /**
    * Create new expense
-   * Automatically handles approval based on amount threshold
+   * Accepts form data and transforms it to API format
    */
-  async createExpense(expenseData: CreateExpenseDto): Promise<Expense> {
-    const formData = new FormData()
-    
-    // Add expense data to form
-    formData.append('title', expenseData.title)
-    formData.append('description', expenseData.description)
-    formData.append('amount', expenseData.amount.toString())
-    formData.append('currency', expenseData.currency)
-    formData.append('categoryId', expenseData.categoryId)
-    
-    // Add receipt file if provided
-    if (expenseData.receiptFile) {
-      formData.append('receipt', expenseData.receiptFile)
+  async createExpense(formData: CreateExpenseFormDto): Promise<Expense> {
+    // Transform form data to API format
+    const apiData: CreateExpenseDto = {
+      amount_idr: formData.amount || 0,
+      description: formData.description,
+      category: formData.category,
+      expense_date: formData.expenseDate?.toISOString() || new Date().toISOString()
     }
 
-    const response = await this.httpClient.post<ApiResponse<Expense>>('/expenses', formData)
-    return response.data
+    // Handle file upload if present - file is already uploaded
+    if (formData.receiptFile && formData.receiptFile.url) {
+      apiData.receipt_url = formData.receiptFile.url
+      apiData.receipt_filename = formData.receiptFile.filename
+    }
+
+    // Send JSON data to API
+    const apiExpense = await this.httpClient.post<ApiExpense>('/expenses', apiData)
+    return transformApiExpense(apiExpense)
+  }
+
+  /**
+   * Upload receipt file to external file service
+   * Uses the external API for file uploads
+   */
+  private async uploadReceipt(file: File): Promise<{ url: string; filename: string }> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      // Use fetch directly for file upload to external API
+      const response = await fetch('https://api.escuelajs.co/api/v1/files/upload', {
+        method: 'POST',
+        body: formData,
+        // Don't set Content-Type header - let the browser set it with boundary
+      })
+
+      if (!response.ok) {
+        throw new Error(`File upload failed: ${response.statusText}`)
+      }
+
+      const result: { originalname: string; filename: string; location: string } = await response.json()
+      
+      return {
+        url: result.location,
+        filename: result.filename
+      }
+    } catch (error) {
+      console.error('File upload error:', error)
+      throw new Error('Failed to upload receipt file')
+    }
   }
 
   /**
    * Update existing expense (only allowed if not approved/rejected)
    */
-  async updateExpense(id: string, updates: UpdateExpenseDto): Promise<Expense> {
-    const response = await this.httpClient.put<ApiResponse<Expense>>(`/expenses/${id}`, updates)
-    return response.data
+  async updateExpense(id: string, formData: Partial<CreateExpenseFormDto>): Promise<Expense> {
+    // Transform form data to API format
+    const apiData: Partial<UpdateExpenseDto> = {}
+    
+    if (formData.amount !== undefined) apiData.amount_idr = formData.amount || 0
+    if (formData.description !== undefined) apiData.description = formData.description
+    if (formData.category !== undefined) apiData.category = formData.category
+    if (formData.expenseDate !== undefined) {
+      apiData.expense_date = formData.expenseDate?.toISOString() || new Date().toISOString()
+    }
+
+    // Handle file upload if present - file is already uploaded
+    if (formData.receiptFile && formData.receiptFile.url) {
+      apiData.receipt_url = formData.receiptFile.url
+      apiData.receipt_filename = formData.receiptFile.filename
+    }
+
+    // Get raw API response and transform it
+    const apiExpense = await this.httpClient.put<ApiExpense>(`/expenses/${id}`, apiData)
+    return transformApiExpense(apiExpense)
   }
 
   /**
@@ -103,7 +194,7 @@ export class ExpenseService {
   /**
    * Get expenses for approval (manager view)
    */
-  async getPendingApprovals(params: ExpenseSearchParams = {}): Promise<PaginatedResponse<Expense>> {
+  async getPendingApprovals(params: ExpenseSearchParams = {}): Promise<ExpenseListResponse> {
     const approvalParams = {
       ...params,
       status: [ExpenseStatus.PENDING_APPROVAL]
@@ -124,22 +215,24 @@ export class ApprovalService {
    * Triggers payment processing for approved amounts
    */
   async approveExpense(id: string, approvalData: ApproveExpenseDto = {}): Promise<Expense> {
-    const response = await this.httpClient.put<ApiResponse<Expense>>(
+    // Get raw API response and transform it
+    const apiExpense = await this.httpClient.patch<ApiExpense>(
       `/expenses/${id}/approve`,
       approvalData
     )
-    return response.data
+    return transformApiExpense(apiExpense)
   }
 
   /**
    * Reject expense
    */
   async rejectExpense(id: string, rejectionData: RejectExpenseDto): Promise<Expense> {
-    const response = await this.httpClient.put<ApiResponse<Expense>>(
+    // Get raw API response and transform it
+    const apiExpense = await this.httpClient.patch<ApiExpense>(
       `/expenses/${id}/reject`,
       rejectionData
     )
-    return response.data
+    return transformApiExpense(apiExpense)
   }
 }
 
@@ -154,20 +247,21 @@ export class PaymentService {
    * Retry failed payment
    */
   async retryPayment(expenseId: string): Promise<Expense> {
-    const response = await this.httpClient.post<ApiResponse<Expense>>(
+    // Get raw API response and transform it
+    const apiExpense = await this.httpClient.post<ApiExpense>(
       `/expenses/${expenseId}/payment/retry`
     )
-    return response.data
+    return transformApiExpense(apiExpense)
   }
 
   /**
    * Get payment status for expense
    */
   async getPaymentStatus(expenseId: string): Promise<{ status: string; details?: string }> {
-    const response = await this.httpClient.get<ApiResponse<{ status: string; details?: string }>>(
+    // API returns payment status directly
+    return await this.httpClient.get<{ status: string; details?: string }>(
       `/expenses/${expenseId}/payment/status`
     )
-    return response.data
   }
 }
 
@@ -182,7 +276,8 @@ export class CategoryService {
    * Get all available expense categories
    */
   async getCategories(): Promise<Array<{ id: string; name: string; description?: string }>> {
-    const response = await this.httpClient.get<ApiResponse<Array<{ id: string; name: string; description?: string }>>>('/categories')
-    return response.data
+    // API returns categories array directly
+    const response = await this.httpClient.get<{categories: Array<{ id: string; name: string; description?: string }>}>('/categories')
+    return response.categories
   }
 }
