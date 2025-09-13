@@ -1,6 +1,6 @@
 # Expense Management Frontend
 
-A modern, domain-driven expense management system built with Nuxt 3, TypeScript, and Nuxt and separation of concerns principles.
+expense management system built with Nuxt 3, TypeScript, and Nuxt and separation of concerns principles.
 
 ## 🏗️ Architecture Overview
 
@@ -93,12 +93,12 @@ NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Option 1: Local Development
+#### Prerequisites
 - Node.js 18+
 - pnpm (recommended) or npm
 
-### Installation
-
+#### Installation
 ```bash
 # Install dependencies
 pnpm install
@@ -110,16 +110,35 @@ pnpm dev
 pnpm build
 ```
 
-### Development
+### Option 2: Docker (Recommended for cross-platform)
+#### Prerequisites
+- Docker
+- Docker Compose
+
+#### Run with Docker
+```bash
+# Build and start the application
+docker-compose up --build
+
+# Run in background
+docker-compose up -d
+
+# Stop the application
+docker-compose down
+```
+
+The application will be available at `http://localhost:3000`
+
+### Development Commands
 
 ```bash
 # Type checking
 pnpm nuxt typecheck
 
 # Linting
-pnpm lint
+npx eslint .
 
-# Testing (when tests are added)
+# Testing
 pnpm test
 ```
 
