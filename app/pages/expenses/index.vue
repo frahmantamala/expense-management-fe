@@ -2,8 +2,8 @@
   <div>
     <!-- Main Content Container -->
     <div class="container mx-auto px-4 py-8">
-      <!-- Page Header -->
-      <div class="flex items-center justify-between mb-8">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between mb-8">
       <div>
         <h1 class="text-3xl font-bold text-gray-900">My Expenses</h1>
         <p class="text-gray-600 mt-2">Manage and track your expense submissions</p>
@@ -12,12 +12,83 @@
         to="/expenses/create"
         class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
       >
-        <span class="mr-2">➕</span>
         New Expense
       </NuxtLink>
     </div>
 
-    <!-- Filters and Search -->
+    <!-- Manager Approval Queue (Only for managers) -->
+    <div v-if="isManager" class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-6 mb-8">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+            <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-semibold text-gray-900">Manager Approval Queue</h2>
+            <p class="text-sm text-gray-600">Expenses ≥ Rp {{ formatIDR(autoApprovalThreshold) }} requiring your approval</p>
+          </div>
+        </div>
+        <div class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+          {{ pendingApprovalExpenses.length }} Pending
+        </div>
+      </div>
+
+      <!-- Pending Approval List -->
+      <div v-if="pendingApprovalExpenses.length > 0" class="space-y-3">
+        <div
+          v-for="expense in pendingApprovalExpenses"
+          :key="expense.id"
+          class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="font-medium text-gray-900">{{ expense.description }}</h3>
+                <ExpenseStatusBadge :status="expense.expenseStatus" />
+              </div>
+              <div class="flex items-center space-x-6 text-sm text-gray-600">
+                <span class="font-semibold text-lg text-gray-900">{{ formatMoney(expense.amount) }}</span>
+                <span>{{ expense.category }}</span>
+                <span>by {{ expense.submittedBy || 'Unknown User' }}</span>
+                <span>{{ formatDate(expense.createdAt) }}</span>
+              </div>
+            </div>
+            <div class="flex space-x-2 ml-4">
+              <button
+                type="button"
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-green-700 bg-green-100 border border-green-300 rounded-md hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                @click="confirmApprove(expense.id)"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Approve
+              </button>
+              <button
+                type="button"
+                class="inline-flex items-center px-3 py-2 text-sm font-medium text-red-700 bg-red-100 border border-red-300 rounded-md hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                @click="confirmReject(expense.id)"
+              >
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="text-center py-6">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">All caught up!</h3>
+        <p class="mt-1 text-sm text-gray-500">No expenses pending your approval at the moment.</p>
+      </div>
+    </div>    <!-- Filters and Search -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <!-- Search -->
@@ -210,9 +281,11 @@
 import { ref, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import type { Expense, ExpenseSearchParams } from '~/app/types/domain'
-import { ExpenseStatus } from '~/app/types/domain'
+import { ExpenseStatus, BUSINESS_RULES } from '~/app/types/domain'
 import { useExpenses } from '~/app/composables/useExpenses'
 import { useCurrency } from '~/app/composables/useCurrency'
+import { useAuthStore } from '~/app/stores/auth'
+import { formatDate } from '~/app/utils/date'
 
 definePageMeta({
   title: 'My Expenses',
@@ -220,7 +293,25 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { formatMoney } = useCurrency()
+const { formatMoney, format: formatCurrency } = useCurrency()
+const authStore = useAuthStore()
+
+const autoApprovalThreshold = BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
+
+const formatIDR = (amount: number): string => {
+  return formatCurrency(amount, 'IDR')
+}
+
+const isManager = computed(() => {
+  return authStore.canApproveExpenses
+})
+
+const pendingApprovalExpenses = computed(() => {
+  return expenses.value.filter(expense => 
+    expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL &&
+    expense.amount.amount >= BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
+  )
+})
 
 const {
   expenses,
@@ -395,6 +486,7 @@ const closeModals = () => {
   selectedExpense.value = null
 }
 
+// Navigation
 const navigateTo = (path: string) => {
   window.location.href = path
 }

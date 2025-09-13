@@ -32,6 +32,7 @@
 <script setup lang="ts">
 import type { Expense, SupportedCurrency } from '~/app/types/domain'
 import { useCurrency } from '~/app/composables/useCurrency'
+import { formatDate } from '~/app/utils/date'
 
 interface Props {
   expense: Expense
@@ -43,13 +44,5 @@ const { formatMoney } = useCurrency()
 
 const formatCurrency = (amount: number, currency: string): string => {
   return formatMoney({ amount, currency: currency as SupportedCurrency })
-}
-
-const formatDate = (date: string): string => {
-  return new Date(date).toLocaleDateString('id-ID', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  })
 }
 </script>

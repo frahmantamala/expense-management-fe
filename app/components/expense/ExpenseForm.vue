@@ -31,17 +31,36 @@
         </div>
         <input
           id="amount"
-          v-model.number="formData.amount"
-          type="number"
-          placeholder="50000"
-          :min="1"
-          :max="BUSINESS_RULES.MAX_EXPENSE_AMOUNT"
+          v-model="displayAmount"
+          type="text"
+          placeholder="1.500.000"
           :disabled="isSubmitting"
           class="w-full pl-12 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
           :class="{ 'border-red-300 focus:ring-red-500 focus:border-red-500': getFieldError('amount') }"
+          @input="handleAmountInput"
           @blur="touchField('amount')"
         >
       </div>
+      
+      <!-- Approval requirement warning -->
+      <div v-if="requiresApproval" class="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <h3 class="text-sm font-medium text-yellow-800">
+              Manager Approval Required
+            </h3>
+            <div class="mt-1 text-sm text-yellow-700">
+              <p>This expense requires manager approval because it's ≥ Rp {{ formatIDR(BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD) }}.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <p v-if="getFieldError('amount')" class="mt-1 text-sm text-red-600">
         {{ getFieldError('amount') }}
       </p>
@@ -250,6 +269,14 @@ const {
 
 const fileInput = ref<HTMLInputElement>()
 
+// Amount display with thousand separators
+const displayAmount = ref('')
+
+// Track if expense requires approval
+const requiresApproval = computed(() => {
+  return (formData.value.amount || 0) >= BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
+})
+
 const initialFormState = ref<typeof formData.value>()
 
 const isUploading = ref(false)
@@ -344,6 +371,35 @@ const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k))
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
+
+const formatIDR = (amount: number): string => {
+  return new Intl.NumberFormat('id-ID').format(amount)
+}
+
+const parseIDR = (formatted: string): number => {
+  return parseInt(formatted.replace(/\D/g, '')) || 0
+}
+
+const handleAmountInput = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const value = input.value
+  
+  const numericValue = parseIDR(value)
+  
+  formData.value.amount = numericValue
+  
+  displayAmount.value = numericValue > 0 ? formatIDR(numericValue) : ''
+  
+  touchField('amount')
+}
+
+watch(() => formData.value.amount, (newAmount) => {
+  if (newAmount && newAmount > 0) {
+    displayAmount.value = formatIDR(newAmount)
+  } else {
+    displayAmount.value = ''
+  }
+}, { immediate: true })
 
 const handleSubmit = () => {
   // touch all fields to show validation errors
