@@ -209,22 +209,19 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { debounce } from 'lodash-es'
-import type { Expense, ExpenseSearchParams } from '../../types/domain'
-import { ExpenseStatus } from '../../types/domain'
-import { useExpenses } from '../../composables/useExpenses'
-import { useCurrency } from '../../composables/useCurrency'
+import type { Expense, ExpenseSearchParams } from '~/app/types/domain'
+import { ExpenseStatus } from '~/app/types/domain'
+import { useExpenses } from '~/app/composables/useExpenses'
+import { useCurrency } from '~/app/composables/useCurrency'
 
-// Page metadata
 definePageMeta({
   title: 'My Expenses',
   description: 'Manage and track your expense submissions',
   middleware: 'auth'
 })
 
-// Currency formatting
 const { formatMoney } = useCurrency()
 
-// Expense management
 const {
   expenses,
   categories,
@@ -241,7 +238,6 @@ const {
   searchExpenses
 } = useExpenses({ autoLoad: true })
 
-// Search and filter state
 const searchQuery = ref('')
 const selectedStatus = ref<string | null>(null)
 const selectedCategory = ref<string | null>(null)
@@ -250,23 +246,18 @@ const dateTo = ref('')
 const amountMin = ref<number | null>(null)
 const amountMax = ref<number | null>(null)
 
-// Sorting
 const sortBy = ref('createdAt')
 const sortOrder = ref<'asc' | 'desc'>('desc')
 
-// Modal state
 const showApproveModal = ref(false)
 const showRejectModal = ref(false)
 const selectedExpense = ref<Expense | null>(null)
 
-// Computed properties for expense actions
 const canApproveExpense = (expense: Expense) => {
-  // Can approve if expense is pending approval
   return expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL
 }
 
 const canRejectExpense = (expense: Expense) => {
-  // Can reject if expense is pending approval
   return expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL
 }
 
@@ -284,7 +275,6 @@ const hasActiveFilters = computed(() => {
 
 const categoriesLoading = computed(() => loading.value && !categories.value.length)
 
-// Filter options
 const statusOptions = computed(() => [
   { label: 'All Statuses', value: null },
   { label: 'Pending Approval', value: ExpenseStatus.PENDING_APPROVAL },
@@ -304,7 +294,6 @@ const sortOptions = computed(() => [
   { label: 'Last Updated', value: 'updatedAt' }
 ])
 
-// Search and filter methods
 const buildSearchParams = (): ExpenseSearchParams => {
   const params: ExpenseSearchParams = {
     offset: 0,
@@ -358,10 +347,8 @@ const toggleSortOrder = () => {
   applyFilters()
 }
 
-// Debounced functions
 const debouncedSearch = debounce(applyFilters, 300)
 
-// Expense actions
 const viewExpense = (expenseId: string) => {
   navigateTo(`/expenses/${expenseId}`)
 }
@@ -408,10 +395,8 @@ const closeModals = () => {
   selectedExpense.value = null
 }
 
-// Navigation
 const navigateTo = (path: string) => {
-  // This would be replaced with actual Nuxt navigation
-  console.log('Navigate to:', path)
+  window.location.href = path
 }
 </script>
 

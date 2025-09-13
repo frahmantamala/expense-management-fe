@@ -3,7 +3,7 @@
  * Provides consistent currency formatting across the application
  */
 
-import type { SupportedCurrency } from '../types/domain'
+import type { SupportedCurrency } from '~/app/types/domain'
 
 // Use the supported currencies from domain types, with fallback
 export type Currency = SupportedCurrency
@@ -161,8 +161,8 @@ export function validateCurrencyAmount(
 
   // Set reasonable limits per currency
   const limits: Record<Currency, number> = {
-    IDR: 1000000000, // 1 billion IDR
-    USD: 1000000     // 1 million USD
+    IDR: 1000000000, 
+    USD: 1000000     
   }
 
   if (amount > limits[currency]) {

@@ -3,7 +3,7 @@
  * Handles user authentication operations using HttpClient
  */
 
-import type { HttpClient } from '../api/client'
+import type { HttpClient } from '~/app/services/api/client'
 
 export interface User {
   id: number

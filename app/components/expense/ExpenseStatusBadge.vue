@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ExpenseStatus } from '../../types/domain'
+import { ExpenseStatus } from '~/app/types/domain'
 
 interface Props {
   status: ExpenseStatus

@@ -1,7 +1,3 @@
-/**
- * Expense Management Composable
- * Provides reactive state management and business logic for expenses
- */
 
 import { ref, reactive, computed, onMounted, toRefs, readonly } from 'vue'
 import type { 
@@ -11,7 +7,7 @@ import type {
   ApproveExpenseDto,
   RejectExpenseDto
 } from '../types/domain'
-import { ExpenseService, ApprovalService, PaymentService, CategoryService } from '../services/domain/expense'
+import { ExpenseService, ApprovalService, PaymentService, CategoryService } from '~/app/services/domain/expense'
 import { useApiClient } from './useApiClient'
 
 interface UseExpenseOptions {
@@ -80,13 +76,12 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
 
       const mergedParams = { ...searchParams.value, ...params }
       const result = await expenseService.getExpenses(mergedParams)
-      console.info('Loaded expenses:', result)
       
       state.expenses = result.expenses
       state.pagination = {
         limit: result.limit,
         offset: result.offset,
-        total: result.expenses.length // Since API doesn't return total, we use current count
+        total: result.expenses.length
       }
 
       // Update search params
@@ -293,7 +288,6 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   const loadCategories = async () => {
     try {
       const categories = await categoryService.getCategories()
-      console.info('Loaded categories:', await categoryService.getCategories())
       state.categories = categories
       return categories
     } catch (error) {
@@ -303,7 +297,7 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   }
 
   const searchExpenses = async (filters: ExpenseSearchParams) => {
-    const params = { ...filters, offset: 0 } // Reset to first page for new search
+    const params = { ...filters, offset: 0 } 
     await loadExpenses(params)
   }
 

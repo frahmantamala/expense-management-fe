@@ -3,8 +3,8 @@
  * Provides reactive currency formatting utilities for Vue components
  */
 
-import { formatCurrency, formatCurrencyCompact, formatCurrencyInput, getCurrencySymbol, type Currency } from '../utils/currency'
-import type { Money } from '../types/domain'
+import { formatCurrency, formatCurrencyCompact, formatCurrencyInput, getCurrencySymbol, type Currency } from '~/app/utils/currency'
+import type { Money } from '~/app/types/domain'
 
 export function useCurrency() {
   /**

@@ -15,10 +15,10 @@ import type {
   RejectExpenseDto,
   Money
 } from '../../types/domain'
-import { ExpenseStatus } from '../../types/domain'
-import type { HttpClient } from '../api/client'
+import { ExpenseStatus } from '~/app/types/domain'
+import type { HttpClient } from '~/app/services/api/client'
 
-// Domain response format for expenses
+// domain response format for expenses
 export interface ExpenseListResponse {
   expenses: Expense[]
   limit: number
@@ -26,7 +26,7 @@ export interface ExpenseListResponse {
 }
 
 /**
- * Transform API expense to domain expense
+ * transform API expense to domain expense
  */
 function transformApiExpense(apiExpense: ApiExpense): Expense {
   return {
@@ -51,17 +51,17 @@ export class ExpenseService {
   constructor(private httpClient: HttpClient) {}
 
   /**
-   * Get paginated list of expenses with filters
+   * get paginated list of expenses with filters
    */
   async getExpenses(params: ExpenseSearchParams = {}): Promise<ExpenseListResponse> {
-    // Map frontend params to backend API params
+    // map frontend params to backend API params
     const apiParams: Record<string, string | number | boolean> = {}
     
-    // Map pagination params  
+    // map pagination params  
     if (params.page) apiParams.page = params.page
     if (params.limit) apiParams.per_page = params.limit
     
-    // Map other filter params
+    // map other filter params
     if (params.search) apiParams.search = params.search
     if (params.status) apiParams.status = params.status.join(',')
     if (params.categoryId) apiParams.category_id = params.categoryId
@@ -78,13 +78,13 @@ export class ExpenseService {
     if (params.sortBy) apiParams.sort_by = params.sortBy
     if (params.sortOrder) apiParams.sort_order = params.sortOrder
 
-    // Get raw API response
+    // get raw API response
     const apiResponse = await this.httpClient.get<ExpensesApiResponse>(
       '/expenses',
       apiParams
     )
     
-    // Transform API expenses to domain expenses
+    // transform API expenses to domain expenses
     const transformedExpenses = apiResponse.expenses.map(transformApiExpense)
     
     return {
@@ -95,20 +95,20 @@ export class ExpenseService {
   }
 
   /**
-   * Get single expense by ID
+   * get single expense by ID
    */
   async getExpenseById(id: string): Promise<Expense> {
-    // Get raw API response and transform it
+    // get raw API response and transform it
     const apiExpense = await this.httpClient.get<ApiExpense>(`/expenses/${id}`)
     return transformApiExpense(apiExpense)
   }
 
   /**
-   * Create new expense
-   * Accepts form data and transforms it to API format
+   * create new expense
+   * accepts form data and transforms it to API format
    */
   async createExpense(formData: CreateExpenseFormDto): Promise<Expense> {
-    // Transform form data to API format
+    // transform form data to API format
     const apiData: CreateExpenseDto = {
       amount_idr: formData.amount || 0,
       description: formData.description,
@@ -116,13 +116,12 @@ export class ExpenseService {
       expense_date: formData.expenseDate?.toISOString() || new Date().toISOString()
     }
 
-    // Handle file upload if present - file is already uploaded
+    // handle file upload if present - file is already uploaded
     if (formData.receiptFile && formData.receiptFile.url) {
       apiData.receipt_url = formData.receiptFile.url
       apiData.receipt_filename = formData.receiptFile.filename
     }
 
-    // Send JSON data to API
     const apiExpense = await this.httpClient.post<ApiExpense>('/expenses', apiData)
     return transformApiExpense(apiExpense)
   }
@@ -136,11 +135,10 @@ export class ExpenseService {
     formData.append('file', file)
 
     try {
-      // Use fetch directly for file upload to external API
+
       const response = await fetch('https://api.escuelajs.co/api/v1/files/upload', {
         method: 'POST',
         body: formData,
-        // Don't set Content-Type header - let the browser set it with boundary
       })
 
       if (!response.ok) {

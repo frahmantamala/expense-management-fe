@@ -1,7 +1,3 @@
-<!--
-  ExpenseForm Component
-  Handles expense creation and editing with comprehensive validation
--->
 <template>
   <form class="space-y-6" @submit.prevent="handleSubmit">
     <!-- Description -->
@@ -24,7 +20,7 @@
       </p>
     </div>
 
-    <!-- Amount (IDR only) -->
+    <!-- Amount (IDR) -->
     <div>
       <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">
         Amount<span class="text-red-500">*</span>
@@ -220,10 +216,10 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
-import type { CreateExpenseFormDto, UploadedFileState } from '../../types/domain'
-import { BUSINESS_RULES } from '../../types/domain'
-import { useExpenseFormValidation } from '../../composables/useFormValidation'
-import { fileUploadService } from '../../services/fileUpload'
+import type { CreateExpenseFormDto } from '~/app/types/domain'
+import { BUSINESS_RULES } from '~/app/types/domain'
+import { useExpenseFormValidation } from '~/app/composables/useFormValidation'
+import { fileUploadService } from '~/app/services/fileUpload'
 
 interface Props {
   mode?: 'create' | 'edit'
@@ -237,13 +233,11 @@ const props = withDefaults(defineProps<Props>(), {
   categoriesLoading: false
 })
 
-// Emits
 const emit = defineEmits<{
   submit: [data: CreateExpenseFormDto]
   cancel: []
 }>()
 
-// Form validation
 const {
   formData,
   isSubmitting,
@@ -254,17 +248,13 @@ const {
   resetForm
 } = useExpenseFormValidation()
 
-// File input ref
 const fileInput = ref<HTMLInputElement>()
 
-// Store initial state for reset functionality
 const initialFormState = ref<typeof formData.value>()
 
-// File upload state
 const isUploading = ref(false)
 const uploadError = ref<string | null>(null)
 
-// Date handling for expenseDate
 const expenseDateInput = computed({
   get: () => {
     if (!formData.value.expenseDate) return ''
@@ -276,14 +266,12 @@ const expenseDateInput = computed({
   }
 })
 
-// Check if form has changes (for edit mode)
 const hasChanges = computed(() => {
   if (!initialFormState.value) return false
   
   return JSON.stringify(formData.value) !== JSON.stringify(initialFormState.value)
 })
 
-// File handling
 const handleFileChange = async (event: Event) => {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -293,26 +281,22 @@ const handleFileChange = async (event: Event) => {
     return
   }
 
-  // Validate file first
   const validation = fileUploadService.validateFile(file)
   if (!validation.isValid) {
     uploadError.value = validation.error || 'Invalid file'
     touchField('receiptFile')
-    // Clear the input
     if (fileInput.value) {
       fileInput.value.value = ''
     }
     return
   }
 
-  // Upload file immediately
   isUploading.value = true
   uploadError.value = null
   
   try {
     const uploadResult = await fileUploadService.uploadFile(file)
     
-    // Store the uploaded file information
     formData.value.receiptFile = {
       file,
       url: uploadResult.url,
@@ -361,16 +345,15 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// Form submission
 const handleSubmit = () => {
-  // Touch all fields to show validation errors
+  // touch all fields to show validation errors
   Object.keys(formData.value).forEach(field => touchField(field as keyof typeof formData.value))
   
   if (!validateForm()) {
     return
   }
 
-  // Create submission data using CreateExpenseFormDto
+  // create submission data using CreateExpenseFormDto
   const submissionData: CreateExpenseFormDto = {
     description: formData.value.description,
     amount: formData.value.amount!,
@@ -379,11 +362,9 @@ const handleSubmit = () => {
     receiptFile: formData.value.receiptFile || undefined
   }
 
-  // Emit submit event
   emit('submit', submissionData)
 }
 
-// Reset form to initial state
 const resetToInitialState = () => {
   if (initialFormState.value) {
     Object.assign(formData.value, { ...initialFormState.value })
@@ -393,7 +374,6 @@ const resetToInitialState = () => {
   }
 }
 
-// Initialize form with initial data
 const initializeForm = () => {
   if (props.initialData) {
     Object.assign(formData.value, {
@@ -401,30 +381,22 @@ const initializeForm = () => {
       amount: props.initialData.amount || null,
       category: props.initialData.category || '',
       expenseDate: props.initialData.expenseDate || null,
-      receiptFile: null // File inputs can't be pre-populated
+      receiptFile: null
     })
   }
   
-  // Store initial state for reset functionality
   initialFormState.value = { ...formData.value }
 }
 
-// Watch for prop changes
 watch(() => props.initialData, initializeForm, { immediate: true })
 
-// Initialize on mount
 onMounted(() => {
   initializeForm()
 })
 
-// Expose form methods for parent component
 defineExpose({
   validateForm,
   resetForm,
   formData
 })
 </script>
-
-<style scoped>
-/* Custom styles for file input are handled inline with Tailwind classes */
-</style>

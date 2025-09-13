@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { PaymentStatus } from '../../types/domain'
+import { PaymentStatus } from '~/app/types/domain'
 
 interface Props {
   status: PaymentStatus
@@ -26,35 +26,35 @@ const statusConfig = computed(() => {
       return {
         classes: 'bg-gray-100 text-gray-800',
         iconClasses: 'text-gray-600',
-        icon: '🕐',
+        icon: '',
         label: 'Payment Pending'
       }
     case PaymentStatus.PROCESSING:
       return {
         classes: 'bg-blue-100 text-blue-800',
         iconClasses: 'text-blue-600',
-        icon: '🔄',
+        icon: '',
         label: 'Processing Payment'
       }
     case PaymentStatus.PAID:
       return {
         classes: 'bg-green-100 text-green-800',
         iconClasses: 'text-green-600',
-        icon: '✅',
+        icon: '',
         label: 'Paid'
       }
     case PaymentStatus.FAILED:
       return {
         classes: 'bg-red-100 text-red-800',
         iconClasses: 'text-red-600',
-        icon: '⚠️',
+        icon: '',
         label: 'Payment Failed'
       }
     default:
       return {
         classes: 'bg-gray-100 text-gray-800',
         iconClasses: 'text-gray-600',
-        icon: '❓',
+        icon: '',
         label: 'Unknown'
       }
   }

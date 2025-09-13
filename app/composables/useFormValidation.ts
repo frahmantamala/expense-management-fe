@@ -1,10 +1,6 @@
-/**
- * Form Validation Composable
- * Provides reusable form validation logic following DRY principles
- */
 
 import { ref, computed, watch } from 'vue'
-import { BUSINESS_RULES, type UploadedFileState } from '../types/domain'
+import { BUSINESS_RULES, type UploadedFileState } from '~/app/types/domain'
 
 interface ValidationRule<T = unknown> {
   validate: (value: T) => boolean
@@ -24,7 +20,6 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
   const fieldStates = ref<Record<string, FieldValidation>>({})
   const isSubmitting = ref(false)
 
-  // Initialize field states
   const initializeFields = () => {
     Object.keys(formData.value).forEach(key => {
       if (!fieldStates.value[key]) {
@@ -38,7 +33,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     })
   }
 
-  // Add validation rules for a field
+  
   const addRule = (field: keyof T, rule: ValidationRule) => {
     const fieldKey = field as string
     if (!validationRules.value[fieldKey]) {
@@ -48,7 +43,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     initializeFields()
   }
 
-  // Validate a single field
+  
   const validateField = (field: keyof T): boolean => {
     const fieldKey = field as string
     const value = formData.value[field]
@@ -69,7 +64,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     return true
   }
 
-  // Validate all fields
+  
   const validateForm = (): boolean => {
     let isValid = true
     Object.keys(formData.value).forEach(field => {
@@ -80,7 +75,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     return isValid
   }
 
-  // Mark field as touched
+  
   const touchField = (field: keyof T) => {
     const fieldKey = field as string
     if (fieldStates.value[fieldKey]) {
@@ -88,7 +83,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     }
   }
 
-  // Reset form
+  
   const resetForm = () => {
     formData.value = { ...initialState }
     Object.keys(fieldStates.value).forEach(key => {
@@ -100,19 +95,19 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     })
   }
 
-  // Get errors for display
+  
   const getFieldError = (field: keyof T): string | null => {
     const fieldKey = field as string
     const fieldState = fieldStates.value[fieldKey]
     return fieldState?.touched ? fieldState.error : null
   }
 
-  // Check if field has error
+  
   const hasFieldError = (field: keyof T): boolean => {
     return getFieldError(field) !== null
   }
 
-  // Computed properties
+  
   const hasErrors = computed(() => {
     return Object.values(fieldStates.value).some(field => field.error !== null)
   })
@@ -121,7 +116,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     return !hasErrors.value && Object.keys(formData.value).length > 0
   })
 
-  // Watch for changes and validate
+  
   watch(formData, (newData) => {
     Object.keys(newData).forEach(field => {
       const fieldState = fieldStates.value[field]
@@ -131,7 +126,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
     })
   }, { deep: true })
 
-  // Initialize on setup
+  
   initializeFields()
 
   return {
@@ -149,7 +144,7 @@ export const useFormValidation = <T extends Record<string, unknown>>(initialStat
   }
 }
 
-// Expense-specific validation composable
+
 export const useExpenseFormValidation = () => {
   const initialState = {
     description: '',
@@ -161,7 +156,7 @@ export const useExpenseFormValidation = () => {
 
   const validation = useFormValidation(initialState)
 
-  // Add expense-specific validation rules
+  
   validation.addRule('description', {
     validate: (value: unknown) => typeof value === 'string' && value.trim().length > 0,
     message: 'Description is required'
@@ -221,7 +216,7 @@ export const useExpenseFormValidation = () => {
 
   validation.addRule('receiptFile', {
     validate: (value: unknown) => {
-      if (!value) return true // Optional field
+      if (!value) return true 
       if (typeof value !== 'object' || value === null) return false
       const uploadedFile = value as UploadedFileState
       return !uploadedFile.error && !!uploadedFile.url && !!uploadedFile.filename
@@ -232,7 +227,7 @@ export const useExpenseFormValidation = () => {
   return validation
 }
 
-// Common validation rules
+
 export const validationRules = {
   required: (message = 'This field is required'): ValidationRule => ({
     validate: (value: unknown) => {

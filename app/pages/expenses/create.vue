@@ -140,20 +140,18 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import type { CreateExpenseFormDto, Expense } from '../../types/domain'
-import { ExpenseStatus } from '../../types/domain'
-import { useExpenses } from '../../composables/useExpenses'
-import ExpenseStatusBadge from '../../components/expense/ExpenseStatusBadge.vue'
-import PaymentStatusBadge from '../../components/expense/PaymentStatusBadge.vue'
+import type { CreateExpenseFormDto, Expense } from '~/app/types/domain'
+import { ExpenseStatus } from '~/app/types/domain'
+import { useExpenses } from '~/app/composables/useExpenses'
+import ExpenseStatusBadge from '~/app/components/expense/ExpenseStatusBadge.vue'
+import PaymentStatusBadge from '~/app/components/expense/PaymentStatusBadge.vue'
 
-// Page metadata
 definePageMeta({
   title: 'Create Expense',
   description: 'Submit a new expense for approval',
   middleware: 'auth'
 })
 
-// Expense management
 const {
   categories,
   loading,
@@ -161,16 +159,13 @@ const {
   createExpense
 } = useExpenses({ autoLoad: false })
 
-// Component state
 const showSuccessModal = ref(false)
 const createdExpense = ref<Expense | null>(null)
 
-// Computed properties
 const isAutoApproved = computed(() => {
   return createdExpense.value?.expenseStatus === ExpenseStatus.AUTO_APPROVED
 })
 
-// Methods
 const handleSubmit = async (expenseData: CreateExpenseFormDto) => {
   try {
     const newExpense = await createExpense(expenseData)
@@ -178,7 +173,6 @@ const handleSubmit = async (expenseData: CreateExpenseFormDto) => {
     showSuccessModal.value = true
   } catch (error) {
     console.error('Error creating expense:', error)
-    // Error is handled by the composable and shown in the UI
   }
 }
 
@@ -189,7 +183,6 @@ const handleCancel = () => {
 const createAnother = () => {
   showSuccessModal.value = false
   createdExpense.value = null
-  // Reset form by reloading the page
   window.location.reload()
 }
 
@@ -198,11 +191,9 @@ const viewExpenses = () => {
 }
 
 const clearError = () => {
-  // Clear error - this would typically be a method from the composable
-  console.log('Clear error')
+  error.value = null
 }
 
-// Load categories on mount
 onMounted(async () => {
   const { loadCategories } = useExpenses({ autoLoad: false })
   await loadCategories()

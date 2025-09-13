@@ -75,7 +75,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/app/stores/auth'
 
-// Page metadata
+// page metadata
 definePageMeta({
   title: 'Login',
   description: 'Sign in to your account',
@@ -83,14 +83,14 @@ definePageMeta({
   middleware: 'guest'
 })
 
-// Reactive form data
+// reactive form data
 const loginForm = reactive({
   email: '',
   password: '',
   rememberMe: false
 })
 
-// Form state management
+// form state management
 const form = reactive({
   isSubmitting: false,
   errors: {
@@ -100,19 +100,19 @@ const form = reactive({
   }
 })
 
-// Auth store
+// auth store
 const authStore = useAuthStore()
 
-// Form validation
+// form validation
 const validateForm = () => {
-  // Reset errors
+  // reset errors
   form.errors.email = ''
   form.errors.password = ''
   form.errors.general = ''
 
   let isValid = true
 
-  // Email validation
+  // email validation
   if (!loginForm.email) {
     form.errors.email = 'Email is required'
     isValid = false
@@ -121,7 +121,7 @@ const validateForm = () => {
     isValid = false
   }
 
-  // Password validation
+  // password validation
   if (!loginForm.password) {
     form.errors.password = 'Password is required'
     isValid = false
@@ -133,7 +133,7 @@ const validateForm = () => {
   return isValid
 }
 
-// Handle form submission
+// handle form submission
 const handleLogin = async () => {
   if (!validateForm()) {
     return
@@ -150,7 +150,7 @@ const handleLogin = async () => {
     const success = await authStore.login(credentials)
 
     if (success) {
-      // Redirect to expenses page
+      // redirect to expenses page
       await navigateTo('/expenses')
     } else {
       form.errors.general = 'Invalid email or password'
@@ -163,22 +163,9 @@ const handleLogin = async () => {
   }
 }
 
-// Fill demo credentials for testing
-const fillDemoCredentials = () => {
-  loginForm.email = 'fadhil@mail.com'
-  loginForm.password = 'password'
-}
-
-// Redirect if already logged in
-// onMounted(() => {
-//   if (authStore.isAuthenticated) {
-//     router.push('/expenses')
-//   }
-// })
 </script>
 
 <style scoped>
-/* Additional custom styles for the login page */
 .group:hover .group-hover\:text-blue-400 {
   color: #60a5fa;
 }

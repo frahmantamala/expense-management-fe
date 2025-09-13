@@ -107,7 +107,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import type { Expense } from '../../types/domain'
+import type { Expense, SupportedCurrency } from '~/app/types/domain'
+import { useCurrency } from '~/app/composables/useCurrency'
 
 interface Props {
   showApprove: boolean
@@ -128,11 +129,9 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-// Local state for modal inputs
 const approvalNotes = ref('')
 const rejectionReason = ref('')
 
-// Permission-based computed properties
 const canShowApprove = computed(() => {
   return props.showApprove && (props.userPermissions?.canApprove ?? true)
 })
@@ -141,14 +140,10 @@ const canShowReject = computed(() => {
   return props.showReject && (props.userPermissions?.canReject ?? true)
 })
 
-// Helper methods
+const { formatMoney } = useCurrency()
+
 const formatCurrency = (amount: number, currency: string): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
+  return formatMoney({ amount, currency: currency as SupportedCurrency })
 }
 
 const handleApprove = () => {

@@ -1,9 +1,5 @@
-/**
- * File Upload Service
- * Handles file uploads to external file service
- */
 
-import type { FileUploadResponse } from '../types/domain'
+import type { FileUploadResponse } from '~/app/types/domain'
 
 export class FileUploadService {
   private static instance: FileUploadService
@@ -42,17 +38,14 @@ export class FileUploadService {
     }
   }
 
-  /**
-   * Validate file before upload
-   */
   validateFile(file: File): { isValid: boolean; error?: string } {
-    // Check file size (max 5MB)
+    // check file size (max 5MB)
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
       return { isValid: false, error: 'File size must not exceed 5MB' }
     }
 
-    // Check file type
+    // check file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf']
     if (!allowedTypes.includes(file.type)) {
       return { isValid: false, error: 'Only JPEG, PNG, and PDF files are allowed' }
@@ -62,5 +55,4 @@ export class FileUploadService {
   }
 }
 
-// Export singleton instance
 export const fileUploadService = FileUploadService.getInstance()

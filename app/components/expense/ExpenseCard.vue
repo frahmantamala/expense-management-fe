@@ -1,7 +1,4 @@
-<!--
-  ExpenseCard Component
-  Displays expense information in a card format
--->
+
 <template>
   <div class="bg-white shadow rounded-lg border border-gray-200 p-6">
     <div class="flex items-center justify-between mb-4">
@@ -33,7 +30,8 @@
 </template>
 
 <script setup lang="ts">
-import type { Expense } from '../../types/domain'
+import type { Expense, SupportedCurrency } from '~/app/types/domain'
+import { useCurrency } from '~/app/composables/useCurrency'
 
 interface Props {
   expense: Expense
@@ -41,13 +39,10 @@ interface Props {
 
 defineProps<Props>()
 
+const { formatMoney } = useCurrency()
+
 const formatCurrency = (amount: number, currency: string): string => {
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount)
+  return formatMoney({ amount, currency: currency as SupportedCurrency })
 }
 
 const formatDate = (date: string): string => {
