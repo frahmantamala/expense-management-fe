@@ -2,7 +2,7 @@
 
 expense management system built with Nuxt 3, TypeScript, and Nuxt and separation of concerns principles.
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 This application follows **Domain-Driven Design (DDD)** principles with clear separation of concerns:
 
@@ -91,7 +91,7 @@ Create a `.env` file:
 NUXT_PUBLIC_API_BASE_URL=http://localhost:8080
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Option 1: Local Development
 #### Prerequisites
@@ -142,7 +142,7 @@ npx eslint .
 pnpm test
 ```
 
-## 📊 Key Features
+## Key Features
 
 ### 1. **Expense Management**
 - Create, read, update, delete expenses
@@ -168,7 +168,7 @@ pnpm test
 - Responsive design
 - Accessible UI components
 
-## 🏛️ Architecture
+## Architecture
 
 ### Domain-Driven Design (DDD)
 - Clear domain models and business rules
@@ -180,7 +180,7 @@ pnpm test
 - UI components focused on presentation
 - State management in composables
 
-## 🔍 Code Quality
+## Code Quality
 
 ### TypeScript
 - Strict type checking enabled
