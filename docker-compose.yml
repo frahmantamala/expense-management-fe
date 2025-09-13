@@ -13,5 +13,5 @@ services:
       - .env
     environment:
       - NODE_ENV=development
-      - NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api/v1
-      - NUXT_PUBLIC_AUTH_API_BASE_URL=http://localhost:8080/api/v1/auth
+      - NUXT_PUBLIC_API_BASE_URL=http://localhost:8081/api/v1
+      - NUXT_PUBLIC_AUTH_API_BASE_URL=http://localhost:8081/api/v1
