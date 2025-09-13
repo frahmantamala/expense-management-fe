@@ -9,7 +9,10 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "css:build": "tailwindcss -i ./assets/css/main.css -o ./assets/css/output.css",
-    "css:watch": "tailwindcss -i ./assets/css/main.css -o ./assets/css/output.css --watch"
+    "css:watch": "tailwindcss -i ./assets/css/main.css -o ./assets/css/output.css --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@nuxt/eslint": "1.9.0",
@@ -28,6 +31,10 @@
   "devDependencies": {
     "@iconify-json/heroicons": "^1.2.2",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^24.3.1"
+    "@types/node": "^24.3.1",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^18.0.1",
+    "jsdom": "^26.1.0",
+    "vitest": "^3.2.4"
   }
 }
