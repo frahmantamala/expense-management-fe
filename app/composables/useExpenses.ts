@@ -23,6 +23,7 @@ interface ExpenseState {
     limit: number
     offset: number
     total?: number
+    totalData?: number // Track total_data separately for clarity
   }
   loading: boolean
   submitting: boolean
@@ -47,7 +48,8 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
     pagination: {
       limit: 10,
       offset: 0,
-      total: 0
+      total: 0,
+      totalData: 0
     },
     loading: false,
     submitting: false,
@@ -64,8 +66,11 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
   const hasExpenses = computed(() => state.expenses.length > 0)
   const isEmpty = computed(() => !state.loading && !hasExpenses.value)
   const canLoadMore = computed(() => {
-    const { total, limit, offset } = state.pagination
-    return total ? (offset + limit) < total : false
+    const { totalData, total } = state.pagination
+    // Use totalData (from total_data field) if available, otherwise fall back to total
+    const totalCount = totalData || total
+    if (!totalCount) return false
+    return state.expenses.length < totalCount
   })
 
   // Actions
@@ -81,7 +86,8 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
       state.pagination = {
         limit: result.limit,
         offset: result.offset,
-        total: result.expenses.length
+        total: result.total,
+        totalData: result.totalData // Store total_data separately
       }
 
       // Update search params
@@ -112,7 +118,8 @@ export const useExpenses = (options: UseExpenseOptions = {}) => {
       state.pagination = {
         limit: result.limit,
         offset: result.offset,
-        total: state.pagination.total ? state.pagination.total + result.expenses.length : result.expenses.length
+        total: result.total || state.pagination.total, // Keep existing total if not provided
+        totalData: result.totalData || state.pagination.totalData // Keep existing totalData if not provided
       }
 
       searchParams.value = nextPageParams

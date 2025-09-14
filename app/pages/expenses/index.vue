@@ -37,7 +37,7 @@
             class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             @change="applyFilters"
           >
-            <option v-for="status in statusOptions" :key="status.value" :value="status.value">
+            <option v-for="status in statusOptions" :key="status.value || 'all'" :value="status.value">
               {{ status.label }}
             </option>
           </select>
@@ -51,7 +51,7 @@
             :disabled="categoriesLoading"
             @change="applyFilters"
           >
-            <option v-for="category in categoryOptions" :key="category.value" :value="category.value">
+            <option v-for="category in categoryOptions" :key="category.value || 'all'" :value="category.value">
               {{ category.label }}
             </option>
           </select>
@@ -88,7 +88,7 @@
       <!-- Results Summary -->
       <div class="flex items-center justify-between text-sm text-gray-600 mb-4">
         <span>
-          Showing {{ expenses.length }} of {{ pagination.total || expenses.length }} expenses
+          Showing {{ expenses.length }} of {{ pagination.totalData || pagination.total || expenses.length }} expenses
         </span>
         <div class="flex items-center space-x-4">
           <!-- Sort Options -->
@@ -212,7 +212,6 @@ import { ExpenseStatus, BUSINESS_RULES } from '~/app/types/domain'
 import { useExpenses } from '~/app/composables/useExpenses'
 import { useCurrency } from '~/app/composables/useCurrency'
 import { useAuthStore } from '~/app/stores/auth'
-import { formatDate } from '~/app/utils/date'
 
 definePageMeta({
   title: 'My Expenses',
@@ -220,25 +219,8 @@ definePageMeta({
   middleware: 'auth'
 })
 
-const { formatMoney, format: formatCurrency } = useCurrency()
+const { formatMoney } = useCurrency()
 const authStore = useAuthStore()
-
-const autoApprovalThreshold = BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
-
-const formatIDR = (amount: number): string => {
-  return formatCurrency(amount, 'IDR')
-}
-
-const isManager = computed(() => {
-  return authStore.canApproveExpenses
-})
-
-const pendingApprovalExpenses = computed(() => {
-  return expenses.value.filter(expense => 
-    expense.expenseStatus === ExpenseStatus.PENDING_APPROVAL &&
-    expense.amount.amount >= BUSINESS_RULES.AUTO_APPROVAL_THRESHOLD
-  )
-})
 
 const {
   expenses,
@@ -299,10 +281,10 @@ const categoriesLoading = computed(() => loading.value && !categories.value.leng
 
 const statusOptions = computed(() => [
   { label: 'All Statuses', value: null },
-  { label: 'Pending Approval', value: ExpenseStatus.PENDING_APPROVAL },
-  { label: 'Auto Approved', value: ExpenseStatus.AUTO_APPROVED },
+  { label: 'Pending', value: ExpenseStatus.PENDING_APPROVAL },
   { label: 'Approved', value: ExpenseStatus.APPROVED },
-  { label: 'Rejected', value: ExpenseStatus.REJECTED }
+  { label: 'Rejected', value: ExpenseStatus.REJECTED },
+  { label: 'Completed', value: ExpenseStatus.COMPLETED }
 ])
 
 const categoryOptions = computed(() => [

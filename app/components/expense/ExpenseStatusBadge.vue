@@ -50,6 +50,13 @@ const statusConfig = computed(() => {
         icon: '',
         label: 'Rejected'
       }
+    case ExpenseStatus.COMPLETED:
+      return {
+        classes: 'bg-purple-100 text-purple-800',
+        iconClasses: 'text-purple-600',
+        icon: '✓',
+        label: 'Completed'
+      }
     default:
       return {
         classes: 'bg-gray-100 text-gray-800',

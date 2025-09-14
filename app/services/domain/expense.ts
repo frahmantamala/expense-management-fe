@@ -23,6 +23,8 @@ export interface ExpenseListResponse {
   expenses: Expense[]
   limit: number
   offset: number
+  total?: number // Original total count
+  totalData?: number // New total_data field from API
 }
 
 /**
@@ -90,7 +92,9 @@ export class ExpenseService {
     return {
       expenses: transformedExpenses,
       limit: apiResponse.limit,
-      offset: apiResponse.offset
+      offset: apiResponse.offset,
+      total: apiResponse.total, // Keep original total
+      totalData: apiResponse.total_data // Include total_data separately
     }
   }
 
